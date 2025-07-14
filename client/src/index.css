@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(142, 71%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(199, 89%, 48%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(0, 73%, 41%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  --success: hsl(158, 64%, 52%);
+  --warning: hsl(43, 89%, 38%);
+  --error: hsl(0, 73%, 41%);
+  --neutral: hsl(220, 13%, 18%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(142, 71%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(199, 89%, 48%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(0, 73%, 41%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  --success: hsl(158, 64%, 52%);
+  --warning: hsl(43, 89%, 38%);
+  --error: hsl(0, 73%, 41%);
+  --neutral: hsl(220, 13%, 18%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Mobile-first design optimizations */
+  .mobile-container {
+    @apply max-w-md mx-auto bg-white min-h-screen shadow-lg;
+  }
+
+  /* Custom scrollbar for mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--foreground));
+  }
+
+  /* Touch-friendly button styles */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Improved focus styles for mobile */
+  .focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Animation classes */
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Mobile-specific utility classes */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Enhanced mobile form styles */
+  .mobile-input {
+    @apply text-base; /* Prevents zoom on iOS */
+  }
+
+  /* Card hover effects for mobile */
+  .card-hover {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .card-hover:active {
+    @apply scale-95;
+  }
+
+  /* Risk level colors matching design */
+  .risk-low {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .risk-medium {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .risk-high {
+    @apply bg-red-100 text-red-800;
+  }
+
+  /* Nutri-Score colors */
+  .nutri-a {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .nutri-b {
+    @apply bg-lime-100 text-lime-800;
+  }
+
+  .nutri-c {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .nutri-d {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .nutri-e {
+    @apply bg-red-100 text-red-800;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded;
+  }
+
+  .skeleton-text {
+    @apply skeleton h-4 w-full mb-2;
+  }
+
+  .skeleton-title {
+    @apply skeleton h-6 w-3/4 mb-3;
+  }
+
+  .skeleton-card {
+    @apply skeleton h-32 w-full rounded-lg;
+  }
+
+  /* Tab navigation styles */
+  .tab-active {
+    @apply text-primary border-b-2 border-primary;
+  }
+
+  .tab-inactive {
+    @apply text-gray-600 hover:text-primary;
+  }
+
+  /* Bottom navigation spacing */
+  .bottom-nav-spacer {
+    @apply pb-20;
+  }
+
+  /* Scanner specific styles */
+  .scanner-overlay {
+    @apply absolute inset-0 bg-black;
+  }
+
+  .scanner-viewfinder {
+    @apply w-80 h-48 border-2 border-white rounded-lg relative;
+  }
+
+  .scanner-corner {
+    @apply absolute w-6 h-6 border-primary;
+  }
+
+  .scanner-corner-tl {
+    @apply top-0 left-0 border-t-4 border-l-4 rounded-tl-lg;
+  }
+
+  .scanner-corner-tr {
+    @apply top-0 right-0 border-t-4 border-r-4 rounded-tr-lg;
+  }
+
+  .scanner-corner-bl {
+    @apply bottom-0 left-0 border-b-4 border-l-4 rounded-bl-lg;
+  }
+
+  .scanner-corner-br {
+    @apply bottom-0 right-0 border-b-4 border-r-4 rounded-br-lg;
+  }
+
+  .scanner-line {
+    @apply absolute top-0 left-0 w-full h-0.5 bg-primary animate-pulse;
+  }
+
+  /* Discussion thread styles */
+  .thread-indent {
+    @apply ml-4 pl-4 border-l-2 border-gray-200;
+  }
+
+  .vote-controls {
+    @apply flex items-center space-x-1;
+  }
+
+  .vote-button {
+    @apply text-gray-600 hover:text-primary p-1 transition-colors;
+  }
+
+  .vote-button:hover {
+    @apply bg-gray-100 rounded;
+  }
+
+  /* Responsive breakpoints for mobile-first design */
+  @media (max-width: 320px) {
+    .container {
+      @apply px-2;
+    }
+    
+    .text-responsive {
+      @apply text-sm;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .mobile-container {
+      @apply border-x border-gray-200;
+    }
+  }
+}
