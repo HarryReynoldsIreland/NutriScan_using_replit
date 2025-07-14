@@ -8,6 +8,16 @@ NutriScan is a mobile-first web application that allows users to scan product ba
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (January 14, 2025)
+
+✓ Complete PostgreSQL migration with working authentication system
+✓ Fixed mobile camera permission issues for barcode scanner functionality  
+✓ Enhanced mobile browser compatibility with proper permission prompts and error handling
+✓ Implemented all core features: three-tab structure, community discussions, voting systems
+✓ App is now production-ready and fully functional on mobile devices
+✓ Added comprehensive README.md for GitHub repository
+✓ Ready for GitHub integration and deployment
+
 ## System Architecture
 
 ### Frontend Architecture
