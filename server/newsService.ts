@@ -30,19 +30,15 @@ export class NewsService {
 
   async fetchNewsForIngredient(ingredientName: string, ingredientId: number, limit: number = 20): Promise<Omit<NewsArticle, 'id' | 'createdAt'>[]> {
     try {
-      // Create very specific search queries for the ingredient
-      const baseQueries = [
-        `"${ingredientName}" food ingredient health effects`,
-        `"${ingredientName}" FDA food additive`,
-        `"${ingredientName}" nutrition label ingredient`,
-        `"${ingredientName}" food safety study research`
+      console.log(`Starting news fetch for ingredient: ${ingredientName} (ID: ${ingredientId})`);
+      
+      // Create simpler search queries that are more likely to return results
+      const queries = [
+        `${ingredientName} food health`,
+        `${ingredientName} nutrition`,
+        `${ingredientName} FDA`,
+        `${ingredientName} study research`
       ];
-
-      // Add ingredient-specific terms for better targeting
-      const specificTerms = this.getIngredientSpecificTerms(ingredientName);
-      const queries = specificTerms.length > 0 
-        ? [...baseQueries, ...specificTerms.map(term => `"${ingredientName}" ${term}`)]
-        : baseQueries;
 
       const allArticles: Omit<NewsArticle, 'id' | 'createdAt'>[] = [];
 
@@ -58,8 +54,15 @@ export class NewsService {
       // Filter out generic articles and keep only ingredient-specific ones
       const filteredArticles = this.filterRelevantArticles(allArticles, ingredientName);
       
+      // If filtering left us with very few articles, fall back to less strict filtering
+      let finalArticles = filteredArticles;
+      if (filteredArticles.length < 5 && allArticles.length > 0) {
+        console.log(`Only ${filteredArticles.length} filtered articles for ${ingredientName}, using broader results`);
+        finalArticles = allArticles; // Use all articles if filtering is too strict
+      }
+      
       // Remove duplicates and limit to requested amount
-      const uniqueArticles = this.removeDuplicates(filteredArticles);
+      const uniqueArticles = this.removeDuplicates(finalArticles);
       return uniqueArticles.slice(0, limit);
 
     } catch (error) {
@@ -71,12 +74,21 @@ export class NewsService {
   private async fetchArticlesByQuery(query: string, ingredientId: number, limit: number): Promise<Omit<NewsArticle, 'id' | 'createdAt'>[]> {
     const url = `${this.baseUrl}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=${limit}&apiKey=${this.apiKey}`;
     
+    console.log(`Fetching news for query: "${query}"`);
+    
     const response = await fetch(url);
     if (!response.ok) {
+      console.error(`News API error: ${response.status} ${response.statusText}`);
       throw new Error(`News API error: ${response.status} ${response.statusText}`);
     }
 
     const data: NewsApiResponse = await response.json();
+    console.log(`Got ${data.articles?.length || 0} articles for query: "${query}"`);
+    
+    if (data.status !== 'ok') {
+      console.error('News API returned error:', data);
+      return [];
+    }
     
     return data.articles
       .filter(article => article.title && article.description && article.url)
@@ -93,30 +105,36 @@ export class NewsService {
 
   private filterRelevantArticles(articles: Omit<NewsArticle, 'id' | 'createdAt'>[], ingredientName: string): Omit<NewsArticle, 'id' | 'createdAt'>[] {
     const ingredientLower = ingredientName.toLowerCase();
-    const keywords = ingredientLower.split(' ');
+    const keywords = ingredientLower.split(' ').filter(word => word.length > 2); // Filter out small words
     
     return articles.filter(article => {
       const titleLower = article.title.toLowerCase();
       const summaryLower = article.summary.toLowerCase();
+      const fullText = `${titleLower} ${summaryLower}`;
       
-      // Article must mention the ingredient name or its key words
-      return keywords.some(keyword => 
-        titleLower.includes(keyword) || summaryLower.includes(keyword)
-      ) && (
-        // And must be food/health related
-        titleLower.includes('food') || 
-        titleLower.includes('health') || 
-        titleLower.includes('nutrition') || 
-        titleLower.includes('ingredient') || 
-        titleLower.includes('fda') || 
-        titleLower.includes('study') ||
-        summaryLower.includes('food') || 
-        summaryLower.includes('health') || 
-        summaryLower.includes('nutrition') || 
-        summaryLower.includes('ingredient') || 
-        summaryLower.includes('fda') || 
-        summaryLower.includes('study')
+      // More lenient ingredient matching - at least one keyword must appear
+      const hasIngredientMention = keywords.some(keyword => 
+        fullText.includes(keyword)
       );
+      
+      // If the ingredient name is quoted in the search, it should appear
+      if (!hasIngredientMention) {
+        return false;
+      }
+      
+      // Very broad food/health relevance check - at least one food-related term
+      const foodHealthTerms = [
+        'food', 'health', 'nutrition', 'diet', 'eating', 'ingredient', 'additive',
+        'fda', 'study', 'research', 'safety', 'consumption', 'beverage', 'drink',
+        'product', 'label', 'regulatory', 'medical', 'wellness', 'disease',
+        'obesity', 'diabetes', 'heart', 'brain', 'body', 'effect', 'risk'
+      ];
+      
+      const isFoodHealthRelated = foodHealthTerms.some(term => 
+        fullText.includes(term)
+      );
+      
+      return isFoodHealthRelated;
     });
   }
 
