@@ -30,12 +30,14 @@ export class NewsService {
     try {
       console.log(`Starting news fetch for ingredient: ${ingredientName} (ID: ${ingredientId})`);
       
-      // Create simpler search queries that are more likely to return results
+      // Create more specific search queries with quoted ingredient names
       const queries = [
-        `${ingredientName} food health`,
-        `${ingredientName} nutrition`,
-        `${ingredientName} FDA`,
-        `${ingredientName} study research`
+        `"${ingredientName}" food health effects`,
+        `"${ingredientName}" nutrition safety`,
+        `"${ingredientName}" FDA regulation`,
+        `"${ingredientName}" health study`,
+        `"${ingredientName}" food additive`,
+        `"${ingredientName}" ingredient research`
       ];
 
       const allArticles: Omit<NewsArticle, 'id' | 'createdAt'>[] = [];
@@ -52,11 +54,37 @@ export class NewsService {
       // Filter out generic articles and keep only ingredient-specific ones
       const filteredArticles = this.filterRelevantArticles(allArticles, ingredientName);
       
-      // If filtering left us with very few articles, fall back to less strict filtering
+      // If filtering left us with very few articles, try broader searches
       let finalArticles = filteredArticles;
-      if (filteredArticles.length < 5 && allArticles.length > 0) {
-        console.log(`Only ${filteredArticles.length} filtered articles for ${ingredientName}, using broader results`);
-        finalArticles = allArticles; // Use all articles if filtering is too strict
+      if (filteredArticles.length < 10) {
+        console.log(`Only ${filteredArticles.length} filtered articles for ${ingredientName}, fetching more with broader queries`);
+        
+        // Try broader searches to get more articles
+        const broaderQueries = [
+          `${ingredientName} food`,
+          `${ingredientName} health`,
+          `${ingredientName} nutrition study`,
+          `${ingredientName} ingredients`
+        ];
+        
+        for (const query of broaderQueries) {
+          if (finalArticles.length >= 10) break;
+          
+          const moreArticles = await this.fetchArticlesByQuery(query, ingredientId, 5);
+          const filteredMore = this.filterRelevantArticles(moreArticles, ingredientName);
+          finalArticles.push(...filteredMore);
+        }
+        
+        // If still not enough, use less strict filtering
+        if (finalArticles.length < 10 && allArticles.length > 0) {
+          console.log(`Still only ${finalArticles.length} articles, using all results with basic filtering`);
+          finalArticles = allArticles.filter(article => {
+            const text = `${article.title} ${article.summary}`.toLowerCase();
+            return ingredientName.toLowerCase().split(' ').some(word => 
+              word.length > 2 && text.includes(word)
+            );
+          });
+        }
       }
       
       // Remove duplicates and limit to requested amount
@@ -102,36 +130,48 @@ export class NewsService {
 
   private filterRelevantArticles(articles: Omit<NewsArticle, 'id' | 'createdAt'>[], ingredientName: string): Omit<NewsArticle, 'id' | 'createdAt'>[] {
     const ingredientLower = ingredientName.toLowerCase();
-    const keywords = ingredientLower.split(' ').filter(word => word.length > 2); // Filter out small words
+    const keywords = ingredientLower.split(' ').filter(word => word.length > 2);
     
     return articles.filter(article => {
       const titleLower = article.title.toLowerCase();
       const summaryLower = article.summary.toLowerCase();
       const fullText = `${titleLower} ${summaryLower}`;
       
-      // More lenient ingredient matching - at least one keyword must appear
+      // Must contain the ingredient name or key components
       const hasIngredientMention = keywords.some(keyword => 
         fullText.includes(keyword)
-      );
+      ) || fullText.includes(ingredientLower);
       
-      // If the ingredient name is quoted in the search, it should appear
       if (!hasIngredientMention) {
         return false;
       }
       
-      // Very broad food/health relevance check - at least one food-related term
+      // Must be food/health/nutrition related
       const foodHealthTerms = [
         'food', 'health', 'nutrition', 'diet', 'eating', 'ingredient', 'additive',
         'fda', 'study', 'research', 'safety', 'consumption', 'beverage', 'drink',
         'product', 'label', 'regulatory', 'medical', 'wellness', 'disease',
-        'obesity', 'diabetes', 'heart', 'brain', 'body', 'effect', 'risk'
+        'obesity', 'diabetes', 'heart', 'brain', 'body', 'effect', 'risk',
+        'supplement', 'vitamin', 'mineral', 'chemical', 'natural', 'organic',
+        'processed', 'artificial', 'synthetic', 'preservative', 'sweetener'
       ];
       
       const isFoodHealthRelated = foodHealthTerms.some(term => 
         fullText.includes(term)
       );
       
-      return isFoodHealthRelated;
+      // Exclude articles that are clearly not about the ingredient
+      const excludeTerms = [
+        'movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'song',
+        'politics', 'election', 'government', 'sports', 'team', 'game',
+        'fashion', 'clothing', 'weather', 'traffic', 'accident'
+      ];
+      
+      const hasExcludeTerms = excludeTerms.some(term => 
+        fullText.includes(term)
+      );
+      
+      return isFoodHealthRelated && !hasExcludeTerms;
     });
   }
 
