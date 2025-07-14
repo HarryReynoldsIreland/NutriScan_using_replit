@@ -21,23 +21,48 @@ export class BarcodeScanner {
     this.onResult = onResult;
 
     try {
-      // Request camera access
+      // Check if camera is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported on this device.');
+      }
+
+      // Request camera access with mobile-optimized settings
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // Use back camera
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+          facingMode: { ideal: 'environment' }, // Use back camera if available
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 }
+        },
+        audio: false
       });
 
       this.video.srcObject = this.stream;
-      this.video.play();
+      
+      // Mobile compatibility attributes
+      this.video.setAttribute('playsinline', 'true');
+      this.video.setAttribute('webkit-playsinline', 'true');
+      this.video.muted = true;
+      
+      await this.video.play();
 
       this.scanning = true;
       this.scan();
     } catch (error) {
       console.error('Error accessing camera:', error);
-      throw new Error('Unable to access camera. Please check permissions.');
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          throw new Error('Camera permission denied. Please allow camera access in your browser settings and try again.');
+        } else if (error.name === 'NotFoundError') {
+          throw new Error('No camera found on this device.');
+        } else if (error.name === 'NotSupportedError') {
+          throw new Error('Camera not supported on this device.');
+        } else if (error.name === 'NotReadableError') {
+          throw new Error('Camera is already in use by another application.');
+        }
+      }
+      
+      throw new Error('Unable to access camera. Please check permissions and try again.');
     }
   }
 
@@ -123,10 +148,32 @@ export class BarcodeScanner {
   // Request camera permissions
   static async requestPermissions(): Promise<boolean> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Check if permissions API is available (mainly for Chrome/Edge)
+      if ('permissions' in navigator) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          if (permission.state === 'denied') {
+            return false;
+          }
+        } catch (e) {
+          // Permissions API might not support camera, continue with getUserMedia
+        }
+      }
+
+      // Request camera access to trigger permission prompt
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      // Immediately stop the stream since we only wanted to request permissions
       stream.getTracks().forEach(track => track.stop());
       return true;
     } catch (error) {
+      console.error('Permission request failed:', error);
       return false;
     }
   }
