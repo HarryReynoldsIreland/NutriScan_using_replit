@@ -20,7 +20,7 @@ export class NewsService {
   private baseUrl = 'https://newsdata.io/api/1/news';
 
   constructor() {
-    this.apiKey = process.env.NEWSDATA_API_KEY!;
+    this.apiKey = process.env.NEWSDATA_API_KEY || 'pub_72002deda8a842e79472bb726fa3b25b';
     if (!this.apiKey) {
       throw new Error('NEWSDATA_API_KEY environment variable is required');
     }
