@@ -114,17 +114,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/ingredients/:id', async (req, res) => {
+  app.get('/api/ingredients/trending', async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      // Return sample data for testing
-      const sampleIngredients = [
-        { id: 1, name: 'High Fructose Corn Syrup', category: 'sweetener', riskLevel: 'high', description: 'Artificial sweetener linked to health concerns' },
-        { id: 2, name: 'Sodium Benzoate', category: 'preservative', riskLevel: 'medium', description: 'Common preservative with some safety concerns' },
-        { id: 3, name: 'Natural Vanilla Extract', category: 'flavoring', riskLevel: 'low', description: 'Natural flavoring generally recognized as safe' }
-      ];
-      
-      const ingredient = sampleIngredients.find(ing => ing.id === id);
+      const limit = parseInt(req.query.limit as string) || 10;
+      const ingredients = await storage.getTrendingIngredients(limit);
+      res.json(ingredients);
+    } catch (error) {
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  app.get('/api/ingredients/name/:name', async (req, res) => {
+    try {
+      const ingredient = await storage.getIngredientByName(req.params.name);
       if (!ingredient) {
         return res.status(404).json({ error: 'Ingredient not found' });
       }
@@ -136,16 +140,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/ingredients/trending/:limit', async (req, res) => {
+  app.get('/api/ingredients/:id', async (req, res) => {
     try {
-      const limit = parseInt(req.params.limit) || 10;
-      // Return sample data for now
-      const sampleIngredients = [
-        { id: 1, name: 'High Fructose Corn Syrup', category: 'sweetener', riskLevel: 'high', description: 'Artificial sweetener linked to health concerns' },
-        { id: 2, name: 'Sodium Benzoate', category: 'preservative', riskLevel: 'medium', description: 'Common preservative with some safety concerns' },
-        { id: 3, name: 'Natural Vanilla Extract', category: 'flavoring', riskLevel: 'low', description: 'Natural flavoring generally recognized as safe' }
-      ];
-      res.json(sampleIngredients.slice(0, limit));
+      const id = parseInt(req.params.id);
+      const ingredient = await storage.getIngredient(id);
+      if (!ingredient) {
+        return res.status(404).json({ error: 'Ingredient not found' });
+      }
+      res.json(ingredient);
     } catch (error) {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Unknown error' 
