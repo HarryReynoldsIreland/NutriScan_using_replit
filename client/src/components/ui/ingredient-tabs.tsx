@@ -25,6 +25,17 @@ export function IngredientTabs({ ingredient, currentUser }: IngredientTabsProps)
   const [newComment, setNewComment] = useState("");
   const [selectedDiscussion, setSelectedDiscussion] = useState<number | null>(null);
 
+  // Don't render if ingredient is not available
+  if (!ingredient || !ingredient.id) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="text-center">Loading ingredient data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Fetch research studies
   const { data: studies = [], isLoading: studiesLoading } = useQuery({
     queryKey: ['/api/research/ingredient', ingredient.id],

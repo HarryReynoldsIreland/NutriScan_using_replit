@@ -489,10 +489,8 @@ export default function IngredientDetail({ currentUser }: IngredientDetailProps)
 
         {/* Tabs */}
         <IngredientTabs
-          ingredientId={ingredient.id}
-          researchContent={researchContent}
-          newsContent={newsContent}
-          discussionContent={discussionContent}
+          ingredient={ingredient}
+          currentUser={currentUser}
         />
       </main>
     </div>
