@@ -7,7 +7,7 @@ import {
   insertModerationFlagSchema 
 } from "@shared/schema";
 import { storage } from "./storage";
-import { newsService } from "./newsService";
+import { aiNewsService } from "./aiNewsService";
 
 // Simple user tracking for now (in production use proper sessions)
 const users = new Map<string, number>();
@@ -261,8 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Ingredient not found' });
       }
 
-      // Fetch real news articles from Google News via News API
-      const articles = await newsService.fetchNewsForIngredient(ingredient.name, ingredientId, 20);
+      // Generate AI news articles using OpenAI
+      const articles = await aiNewsService.generateNewsForIngredient(ingredient.name, ingredientId, 10);
       
       // Convert to our news article format
       const formattedArticles = articles.map(article => ({
