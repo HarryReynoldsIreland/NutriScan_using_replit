@@ -1,30 +1,31 @@
 import { NewsArticle } from "@shared/schema";
 
-interface NewsApiArticle {
+interface ContextualNewsArticle {
   title: string;
   description: string;
   url: string;
-  urlToImage: string;
-  publishedAt: string;
-  source: {
+  image?: {
+    url: string;
+  };
+  datePublished: string;
+  provider: {
     name: string;
   };
 }
 
-interface NewsApiResponse {
-  status: string;
-  totalResults: number;
-  articles: NewsApiArticle[];
+interface ContextualNewsResponse {
+  totalCount: number;
+  value: ContextualNewsArticle[];
 }
 
 export class NewsService {
   private apiKey: string;
-  private baseUrl = 'https://newsapi.org/v2';
+  private baseUrl = 'https://contextualwebsearch-websearch-v1.p.rapidapi.com/api/Search/NewsSearchAPI';
 
   constructor() {
-    this.apiKey = process.env.NEWS_API_KEY!;
+    this.apiKey = process.env.CONTEXTUAL_NEWS_API_KEY!;
     if (!this.apiKey) {
-      throw new Error('NEWS_API_KEY environment variable is required');
+      throw new Error('CONTEXTUAL_NEWS_API_KEY environment variable is required');
     }
   }
 
@@ -72,34 +73,38 @@ export class NewsService {
   }
 
   private async fetchArticlesByQuery(query: string, ingredientId: number, limit: number): Promise<Omit<NewsArticle, 'id' | 'createdAt'>[]> {
-    const url = `${this.baseUrl}/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=${limit}&apiKey=${this.apiKey}`;
-    
     console.log(`Fetching news for query: "${query}"`);
     
-    const response = await fetch(url);
+    const response = await fetch(`${this.baseUrl}?q=${encodeURIComponent(query)}&pageSize=${limit}&autoCorrect=true&safeSearch=false`, {
+      headers: {
+        'X-RapidAPI-Key': this.apiKey,
+        'X-RapidAPI-Host': 'contextualwebsearch-websearch-v1.p.rapidapi.com'
+      }
+    });
+    
     if (!response.ok) {
-      console.error(`News API error: ${response.status} ${response.statusText}`);
-      throw new Error(`News API error: ${response.status} ${response.statusText}`);
+      console.error(`ContextualWeb API error: ${response.status} ${response.statusText}`);
+      throw new Error(`ContextualWeb API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: NewsApiResponse = await response.json();
-    console.log(`Got ${data.articles?.length || 0} articles for query: "${query}"`);
+    const data: ContextualNewsResponse = await response.json();
+    console.log(`Got ${data.value?.length || 0} articles for query: "${query}"`);
     
-    if (data.status !== 'ok') {
-      console.error('News API returned error:', data);
+    if (!data.value) {
+      console.error('ContextualWeb API returned no articles:', data);
       return [];
     }
     
-    return data.articles
+    return data.value
       .filter(article => article.title && article.description && article.url)
       .map(article => ({
         ingredientId,
         title: article.title,
         summary: article.description,
         url: article.url,
-        source: article.source.name,
-        imageUrl: article.urlToImage,
-        publishedDate: article.publishedAt.split('T')[0], // Convert to YYYY-MM-DD
+        source: article.provider.name,
+        imageUrl: article.image?.url || null,
+        publishedDate: article.datePublished.split('T')[0], // Convert to YYYY-MM-DD
       }));
   }
 
