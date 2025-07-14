@@ -38,20 +38,32 @@ export function IngredientTabs({ ingredient, currentUser }: IngredientTabsProps)
 
   // Fetch research studies
   const { data: studies = [], isLoading: studiesLoading } = useQuery({
-    queryKey: ['/api/research/ingredient', ingredient.id],
-    queryFn: () => apiRequest(`/api/research/ingredient/${ingredient.id}`).then(r => r.json()),
+    queryKey: ['/api/ingredients', ingredient.id, 'research'],
+    queryFn: async () => {
+      const response = await fetch(`/api/research/ingredient/${ingredient.id}`);
+      if (!response.ok) throw new Error('Failed to fetch research');
+      return response.json();
+    },
   });
 
   // Fetch news articles
   const { data: articles = [], isLoading: articlesLoading } = useQuery({
-    queryKey: ['/api/news/ingredient', ingredient.id],
-    queryFn: () => apiRequest(`/api/news/ingredient/${ingredient.id}`).then(r => r.json()),
+    queryKey: ['/api/ingredients', ingredient.id, 'news'],
+    queryFn: async () => {
+      const response = await fetch(`/api/news/ingredient/${ingredient.id}`);
+      if (!response.ok) throw new Error('Failed to fetch news');
+      return response.json();
+    },
   });
 
   // Fetch discussions
   const { data: discussions = [], isLoading: discussionsLoading } = useQuery({
-    queryKey: ['/api/discussions/ingredient', ingredient.id],
-    queryFn: () => apiRequest(`/api/discussions/ingredient/${ingredient.id}`).then(r => r.json()),
+    queryKey: ['/api/ingredients', ingredient.id, 'discussions'],
+    queryFn: async () => {
+      const response = await fetch(`/api/discussions/ingredient/${ingredient.id}`);
+      if (!response.ok) throw new Error('Failed to fetch discussions');
+      return response.json();
+    },
   });
 
   // Fetch comments for selected discussion
@@ -65,31 +77,39 @@ export function IngredientTabs({ ingredient, currentUser }: IngredientTabsProps)
 
   // Create discussion mutation
   const createDiscussion = useMutation({
-    mutationFn: (content: string) => apiRequest('/api/discussions', {
-      method: 'POST',
-      headers: setAuthHeader({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        ingredientId: ingredient.id,
-        title: content.substring(0, 100),
-        content,
-      }),
-    }),
+    mutationFn: async (content: string) => {
+      const response = await fetch('/api/discussions', {
+        method: 'POST',
+        headers: setAuthHeader({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          ingredientId: ingredient.id,
+          title: content.substring(0, 100),
+          content,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to create discussion');
+      return response.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/discussions/ingredient', ingredient.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ingredients', ingredient.id, 'discussions'] });
       setNewDiscussion("");
     },
   });
 
   // Create comment mutation
   const createComment = useMutation({
-    mutationFn: (content: string) => apiRequest('/api/comments', {
-      method: 'POST',
-      headers: setAuthHeader({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({
-        discussionId: selectedDiscussion,
-        content,
-      }),
-    }),
+    mutationFn: async (content: string) => {
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: setAuthHeader({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          discussionId: selectedDiscussion,
+          content,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to create comment');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/comments/discussion', selectedDiscussion] });
       setNewComment("");
