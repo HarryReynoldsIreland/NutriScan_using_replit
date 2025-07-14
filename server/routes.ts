@@ -7,6 +7,7 @@ import {
   insertModerationFlagSchema 
 } from "@shared/schema";
 import { storage } from "./storage";
+import { newsService } from "./newsService";
 
 // Simple user tracking for now (in production use proper sessions)
 const users = new Map<string, number>();
@@ -252,12 +253,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/news/ingredient/:ingredientId', async (req, res) => {
     try {
-      const articles = await storage.getNewsArticlesByIngredient(parseInt(req.params.ingredientId));
-      res.json(articles);
+      const ingredientId = parseInt(req.params.ingredientId);
+      
+      // Get ingredient details to fetch news
+      const ingredient = await storage.getIngredient(ingredientId);
+      if (!ingredient) {
+        return res.status(404).json({ error: 'Ingredient not found' });
+      }
+
+      // Fetch real news articles from Google News via News API
+      const articles = await newsService.fetchNewsForIngredient(ingredient.name, ingredientId, 20);
+      
+      // Convert to our news article format
+      const formattedArticles = articles.map(article => ({
+        id: Math.floor(Math.random() * 1000000), // Temporary ID for client
+        ingredientId: article.ingredientId,
+        title: article.title,
+        summary: article.summary,
+        url: article.url,
+        source: article.source,
+        imageUrl: article.imageUrl,
+        publishedDate: article.publishedDate,
+        createdAt: new Date().toISOString()
+      }));
+
+      res.json(formattedArticles);
     } catch (error) {
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      });
+      console.error('Error fetching news:', error);
+      
+      // Fallback to database articles if News API fails
+      try {
+        const articles = await storage.getNewsArticlesByIngredient(parseInt(req.params.ingredientId));
+        res.json(articles);
+      } catch (fallbackError) {
+        res.status(500).json({ 
+          error: error instanceof Error ? error.message : 'Failed to fetch news articles' 
+        });
+      }
     }
   });
 
