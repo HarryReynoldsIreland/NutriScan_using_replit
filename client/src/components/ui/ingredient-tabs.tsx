@@ -166,7 +166,7 @@ export function IngredientTabs({ ingredient, currentUser }: IngredientTabsProps)
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{study.title}</CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {study.authors} • {study.journal} • {new Date(study.publishedDate).getFullYear()}
+                        {study.authors} • {study.source} • {new Date(study.publishedDate).getFullYear()}
                       </p>
                     </CardHeader>
                     <CardContent>
