@@ -35,40 +35,40 @@ export class AINewsService {
         return cached.articles.slice(0, limit);
       }
 
-      const prompt = `Generate ${limit} realistic and informative news article summaries about "${ingredientName}" as a food ingredient. Focus on:
+      const prompt = `You are a research assistant helping users find real, factual information about "${ingredientName}" as a food ingredient. Based on your knowledge of actual published research, FDA guidance, and legitimate health studies, provide ${limit} summaries of real findings about this ingredient.
 
-1. Recent health research and studies
-2. FDA regulations and safety updates  
-3. Nutritional benefits or concerns
-4. Industry developments and usage trends
-5. Consumer health advice from experts
+Focus on citing actual:
+1. Published scientific studies with real research findings
+2. FDA statements and regulatory guidance that actually exists
+3. Established nutritional facts from credible sources
+4. Real industry developments and regulatory changes
+5. Legitimate health organization recommendations
 
-For each article, provide:
-- A compelling, journalistic headline
-- A 2-3 sentence summary of the key points
-- A realistic news source name
-- A category (Health, Nutrition, Regulation, Research, or Industry)
-- Today's date
+For each real finding, provide:
+- A factual title describing the actual research/finding
+- A summary of the real study results or regulatory guidance
+- The actual source or type of organization that published it
+- A realistic category
 
-Format as JSON array with this structure:
+Format as JSON array:
 [
   {
-    "title": "Article headline here",
-    "summary": "Detailed summary of the article content...",
-    "category": "Health",
-    "source": "Health News Daily",
+    "title": "Actual research finding or regulatory update",
+    "summary": "Real summary of published findings...",
+    "category": "Research",
+    "source": "Journal/Organization name",
     "date": "2025-07-14"
   }
 ]
 
-Make the articles diverse, credible, and specific to ${ingredientName}. Include both positive research and any health concerns where appropriate.`;
+Only include information that reflects real, published research or official guidance about ${ingredientName}. If real research is limited, include fewer entries rather than fictional content.`;
 
       const response = await this.openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
-            content: "You are a health and nutrition journalist who creates accurate, well-researched article summaries about food ingredients. Focus on factual information and cite realistic sources."
+            content: "You are a research librarian who summarizes only real, published research and official regulatory guidance. Never create fictional studies or fake news articles. Only provide information based on actual published research, FDA statements, or legitimate health organization guidelines that exist in your training data."
           },
           {
             role: "user",
@@ -120,55 +120,39 @@ Make the articles diverse, credible, and specific to ${ingredientName}. Include 
   }
 
   private generateSearchUrl(title: string, ingredientName: string): string {
-    const searchQuery = `${ingredientName} ${title.split(' ').slice(0, 3).join(' ')}`;
-    return `https://scholar.google.com/scholar?q=${encodeURIComponent(searchQuery)}`;
+    // Create search URL for finding the actual research or FDA guidance mentioned
+    const searchQuery = `"${ingredientName}" ${title.split(' ').slice(0, 4).join(' ')} site:nih.gov OR site:fda.gov OR site:who.int OR site:pubmed.ncbi.nlm.nih.gov`;
+    return `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
   }
 
   private generateFallbackArticles(ingredientName: string, ingredientId: number, limit: number): Omit<NewsArticle, 'id' | 'createdAt'>[] {
     const today = new Date().toISOString().split('T')[0];
+    // Only provide links to search for real research, don't create fake articles
     const fallbackArticles = [
       {
         ingredientId,
-        title: `New Research Examines ${ingredientName} Health Effects`,
-        summary: `Recent scientific studies investigate the potential health impacts of ${ingredientName} consumption, providing updated guidance for consumers and healthcare professionals.`,
-        url: `https://scholar.google.com/scholar?q=${encodeURIComponent(ingredientName + ' health effects research')}`,
-        source: 'Nutrition Research Journal',
+        title: `Search for Current ${ingredientName} Research`,
+        summary: `Find the latest peer-reviewed research studies about ${ingredientName} from medical and nutrition journals, including safety assessments and health impact studies.`,
+        url: `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(ingredientName + ' safety health effects')}`,
+        source: 'PubMed Database',
         imageUrl: null,
         publishedDate: today
       },
       {
         ingredientId,
-        title: `FDA Updates Guidelines for ${ingredientName} Safety`,
-        summary: `The Food and Drug Administration reviews current safety standards for ${ingredientName}, considering new research findings and industry practices.`,
-        url: `https://scholar.google.com/scholar?q=${encodeURIComponent(ingredientName + ' FDA safety guidelines')}`,
-        source: 'FDA Health Updates',
+        title: `FDA Guidance on ${ingredientName}`,
+        summary: `Access official FDA regulatory information, safety assessments, and approved usage guidelines for ${ingredientName} in food products.`,
+        url: `https://www.fda.gov/search/?query=${encodeURIComponent(ingredientName)}`,
+        source: 'FDA Official Website',
         imageUrl: null,
         publishedDate: today
       },
       {
         ingredientId,
-        title: `Nutritionists Weigh In on ${ingredientName} in Diet`,
-        summary: `Leading nutrition experts discuss the role of ${ingredientName} in modern diets, offering evidence-based recommendations for consumers.`,
-        url: `https://scholar.google.com/scholar?q=${encodeURIComponent(ingredientName + ' nutrition diet recommendations')}`,
-        source: 'Dietitian Weekly',
-        imageUrl: null,
-        publishedDate: today
-      },
-      {
-        ingredientId,
-        title: `Industry Trends: ${ingredientName} Usage in Food Production`,
-        summary: `Food manufacturers adapt their use of ${ingredientName} in response to consumer demands and regulatory changes, shaping industry practices.`,
-        url: `https://scholar.google.com/scholar?q=${encodeURIComponent(ingredientName + ' food industry trends')}`,
-        source: 'Food Industry News',
-        imageUrl: null,
-        publishedDate: today
-      },
-      {
-        ingredientId,
-        title: `Consumer Health: Understanding ${ingredientName} Labels`,
-        summary: `Health advocates help consumers better understand food labels containing ${ingredientName}, promoting informed dietary choices.`,
-        url: `https://scholar.google.com/scholar?q=${encodeURIComponent(ingredientName + ' food labels consumer health')}`,
-        source: 'Consumer Health Today',
+        title: `WHO Guidelines for ${ingredientName}`,
+        summary: `Review World Health Organization recommendations and international safety standards for ${ingredientName} consumption and usage.`,
+        url: `https://www.who.int/search?query=${encodeURIComponent(ingredientName)}`,
+        source: 'World Health Organization',
         imageUrl: null,
         publishedDate: today
       }
